@@ -109,24 +109,27 @@ class Critic_DRR(nn.Module):
 class State_Repr_Module(nn.Module):
     def __init__(self, user_num, item_num, embedding_dim, hidden_dim):
         super().__init__()
-        #         self.user_embeddings = nn.Embedding(user_num, embedding_dim)
-        #         self.item_embeddings = nn.Embedding(item_num+1, embedding_dim, padding_idx=int(item_num))
+        
+        DATA_FOLDER = '/content/drive/MyDrive/MIND-Dataset/1/'
+        news=pd.read_csv(os.path.join(DATA_FOLDER, 'news_feats'),sep=',')
+        users=pd.read_csv(os.path.join(DATA_FOLDER, 'users_feats'),sep=',')
+
+        users.drop(columns='user_id_encoded',inplace=True)
+        user_embedding = users.values
+        ft_user_embedding_tensor = torch.from_numpy(user_embedding)
+        
+        ft_item_embeddings_tensor = torch.from_numpy(item_embeddings).double()
+        
         self.drr_ave = torch.nn.Conv1d(in_channels=params['N'], out_channels=1, kernel_size=1).double()
 
         self.initialize()
 
     def initialize(self):
-        #         nn.init.normal_(self.user_embeddings.weight, std=0.01)
-        #         nn.init.normal_(self.item_embeddings.weight, std=0.01)
-        #         self.item_embeddings.weight.data[-1].zero_()
         nn.init.uniform_(self.drr_ave.weight)
         self.drr_ave.bias.data.zero_()
 
     def forward(self, user, memory):
-        #         user_embedding = self.user_embeddings(user.long())
         user_embedding = ft_user_embedding_tensor[user.long(), :]
-        #         item_embeddings = self.item_embeddings(memory.long())
-        #        print('memory: ', memory)
         item_embeddings = ft_item_embeddings_tensor[memory.long(), :]
         item_embeddings = item_embeddings.type(torch.DoubleTensor)
         drr_ave = self.drr_ave(item_embeddings).squeeze(1)
